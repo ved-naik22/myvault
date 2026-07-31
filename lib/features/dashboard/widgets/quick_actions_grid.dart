@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../documents/documents_page.dart';
+import '../../profile/profile_page.dart';
+
 class QuickActionsGrid extends StatelessWidget {
   const QuickActionsGrid({super.key});
 
@@ -12,43 +15,63 @@ class QuickActionsGrid extends StatelessWidget {
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
       childAspectRatio: 1.6,
-      children: const [
-        ActionTile(
+      children: [
+        _ActionTile(
           icon: Icons.person,
-          title: 'Profile',
+          title: "Profile",
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const ProfilePage(),
+              ),
+            );
+          },
         ),
-        ActionTile(
+        _ActionTile(
           icon: Icons.folder,
-          title: 'Documents',
+          title: "Documents",
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const DocumentsPage(),
+              ),
+            );
+          },
         ),
-        ActionTile(
+        _ActionTile(
           icon: Icons.lock,
-          title: 'Passwords',
+          title: "Passwords",
+          onTap: () {},
         ),
-        ActionTile(
+        _ActionTile(
           icon: Icons.settings,
-          title: 'Settings',
+          title: "Settings",
+          onTap: () {},
         ),
       ],
     );
   }
 }
 
-class ActionTile extends StatelessWidget {
+class _ActionTile extends StatelessWidget {
   final IconData icon;
   final String title;
+  final VoidCallback onTap;
 
-  const ActionTile({
-    super.key,
+  const _ActionTile({
     required this.icon,
     required this.title,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        onTap: () {},
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
