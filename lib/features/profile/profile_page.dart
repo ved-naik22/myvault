@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'widgets/profile_header.dart';
+import 'widgets/profile_info_card.dart';
 import 'widgets/profile_tile.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -16,7 +16,7 @@ class ProfilePage extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children:  [
-            ProfileHeader(),
+             ProfileInfoCard(),
 
             SizedBox(height: 30),
 
