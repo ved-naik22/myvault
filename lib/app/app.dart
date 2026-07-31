@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../features/navigation/navigation_page.dart';
+import '../features/dashboard/dashboard_page.dart';
+import '../features/profile/providers/profile_provider.dart';
 import 'theme/app_theme.dart';
 
 class MyVaultApp extends StatelessWidget {
@@ -8,11 +10,14 @@ class MyVaultApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'MyVault',
-      theme: AppTheme.lightTheme,
-      home: const NavigationPage(),
+    return ChangeNotifierProvider(
+      create: (_) => ProfileProvider()..loadProfile(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'MyVault',
+        theme: AppTheme.lightTheme,
+        home: const DashboardPage(),
+      ),
     );
   }
 }
