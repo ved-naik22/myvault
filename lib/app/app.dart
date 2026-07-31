@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../features/dashboard/dashboard_page.dart';
+import '../features/navigation/navigation_page.dart';
 import 'theme/app_theme.dart';
 
 class MyVaultApp extends StatelessWidget {
@@ -12,7 +12,7 @@ class MyVaultApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'MyVault',
       theme: AppTheme.lightTheme,
-      home: const DashboardPage(),
+      home: const NavigationPage(),
     );
   }
 }
