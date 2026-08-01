@@ -19,6 +19,14 @@ class DocumentService {
     return box.values.toList();
   }
 
+  Future<void> updateDocument(
+    int index,
+    DocumentModel document,
+  ) async {
+    final box = await openBox();
+    await box.putAt(index, document);
+  }
+
   Future<void> deleteDocument(int index) async {
     final box = await openBox();
     await box.deleteAt(index);

@@ -6,7 +6,14 @@ import 'models/document_model.dart';
 import 'providers/document_provider.dart';
 
 class AddDocumentPage extends StatefulWidget {
-  const AddDocumentPage({super.key});
+  final DocumentModel? document;
+  final int? documentIndex;
+
+  const AddDocumentPage({
+    super.key,
+    this.document,
+    this.documentIndex,
+  });
 
   @override
   State<AddDocumentPage> createState() => _AddDocumentPageState();
@@ -33,6 +40,18 @@ class _AddDocumentPageState extends State<AddDocumentPage> {
     "Other",
   ];
 
+@override
+void initState() {
+  super.initState();
+
+  if (widget.document != null) {
+    _titleController.text = widget.document!.title;
+    _notesController.text = widget.document!.notes;
+    _selectedCategory = widget.document!.category;
+    _selectedFilePath = widget.document!.filePath;
+  }
+}
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -54,45 +73,61 @@ class _AddDocumentPageState extends State<AddDocumentPage> {
   }
 
   Future<void> _saveDocument() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    if (_selectedFilePath == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please select a document."),
-        ),
-      );
-      return;
-    }
-
-    final document = DocumentModel(
-      title: _titleController.text.trim(),
-      category: _selectedCategory,
-      notes: _notesController.text.trim(),
-      filePath: _selectedFilePath!,
-      createdAt: DateTime.now(),
-    );
-
-    await context.read<DocumentProvider>().addDocument(document);
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Document saved successfully!"),
-      ),
-    );
-
-    Navigator.pop(context);
+  if (!_formKey.currentState!.validate()) {
+    return;
   }
 
+  if (_selectedFilePath == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Please select a document."),
+      ),
+    );
+    return;
+  }
+
+  final document = DocumentModel(
+    title: _titleController.text.trim(),
+    category: _selectedCategory,
+    notes: _notesController.text.trim(),
+    filePath: _selectedFilePath!,
+    createdAt: widget.document?.createdAt ?? DateTime.now(),
+  );
+
+  final provider = context.read<DocumentProvider>();
+
+  if (widget.document == null) {
+    await provider.addDocument(document);
+  } else {
+    await provider.updateDocument(
+      widget.documentIndex!,
+      document,
+    );
+  }
+
+  if (!mounted) return;
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        widget.document == null
+            ? "Document saved successfully!"
+            : "Document updated successfully!",
+      ),
+    ),
+  );
+
+  Navigator.pop(context);
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Add Document"),
+       title: Text(
+  widget.document == null
+      ? "Add Document"
+      : "Edit Document",
+),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -180,7 +215,11 @@ class _AddDocumentPageState extends State<AddDocumentPage> {
                 child: FilledButton.icon(
                   onPressed: _saveDocument,
                   icon: const Icon(Icons.save),
-                  label: const Text("Save Document"),
+                  label: Text(
+                    widget.document == null
+                        ? "Save Document"
+                        : "Update Document",
+),
                 ),
               ),
             ],

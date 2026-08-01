@@ -20,6 +20,14 @@ class DocumentProvider extends ChangeNotifier {
     await loadDocuments();
   }
 
+  Future<void> updateDocument(
+    int index,
+    DocumentModel document,
+  ) async {
+    await _service.updateDocument(index, document);
+    await loadDocuments();
+  }
+
   Future<void> deleteDocument(int index) async {
     await _service.deleteDocument(index);
     await loadDocuments();
