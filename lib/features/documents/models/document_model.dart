@@ -3,7 +3,7 @@ import 'package:hive/hive.dart';
 part 'document_model.g.dart';
 
 @HiveType(typeId: 1)
-class DocumentModel {
+class DocumentModel extends HiveObject {
   @HiveField(0)
   String title;
 
@@ -11,19 +11,19 @@ class DocumentModel {
   String category;
 
   @HiveField(2)
-  String filePath;
+  String notes;
 
   @HiveField(3)
-  DateTime dateAdded;
+  String filePath;
 
   @HiveField(4)
-  String notes;
+  DateTime createdAt;
 
   DocumentModel({
     required this.title,
     required this.category,
-    required this.filePath,
-    required this.dateAdded,
     required this.notes,
+    required this.filePath,
+    required this.createdAt,
   });
 }

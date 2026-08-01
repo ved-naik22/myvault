@@ -19,9 +19,9 @@ class DocumentModelAdapter extends TypeAdapter<DocumentModel> {
     return DocumentModel(
       title: fields[0] as String,
       category: fields[1] as String,
-      filePath: fields[2] as String,
-      dateAdded: fields[3] as DateTime,
-      notes: fields[4] as String,
+      notes: fields[2] as String,
+      filePath: fields[3] as String,
+      createdAt: fields[4] as DateTime,
     );
   }
 
@@ -34,11 +34,11 @@ class DocumentModelAdapter extends TypeAdapter<DocumentModel> {
       ..writeByte(1)
       ..write(obj.category)
       ..writeByte(2)
-      ..write(obj.filePath)
+      ..write(obj.notes)
       ..writeByte(3)
-      ..write(obj.dateAdded)
+      ..write(obj.filePath)
       ..writeByte(4)
-      ..write(obj.notes);
+      ..write(obj.createdAt);
   }
 
   @override

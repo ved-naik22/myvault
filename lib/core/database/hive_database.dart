@@ -7,7 +7,12 @@ class HiveDatabase {
   static Future<void> initialize() async {
     await Hive.initFlutter();
 
+    // Register Adapters
     Hive.registerAdapter(ProfileModelAdapter());
     Hive.registerAdapter(DocumentModelAdapter());
+
+    // Open Hive Boxes
+    await Hive.openBox<ProfileModel>('profile');
+    await Hive.openBox<DocumentModel>('documents');
   }
 }

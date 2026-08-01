@@ -6,7 +6,7 @@ class DocumentService {
   static const String boxName = "documents";
 
   Future<Box<DocumentModel>> openBox() async {
-    return await Hive.openBox<DocumentModel>(boxName);
+    return Hive.openBox<DocumentModel>(boxName);
   }
 
   Future<void> addDocument(DocumentModel document) async {
