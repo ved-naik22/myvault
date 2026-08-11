@@ -14,7 +14,21 @@ class DocumentsPage extends StatefulWidget {
 }
 
 class _DocumentsPageState extends State<DocumentsPage> {
-  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchController =
+      TextEditingController();
+
+  final List<String> _categories = [
+    "All",
+    "Aadhaar",
+    "PAN",
+    "Passport",
+    "Driving Licence",
+    "Voter ID",
+    "Medical",
+    "Education",
+    "Finance",
+    "Other",
+  ];
 
   @override
   void dispose() {
@@ -32,8 +46,9 @@ class _DocumentsPageState extends State<DocumentsPage> {
       ),
       body: Column(
         children: [
+          // Search Bar
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
@@ -59,6 +74,39 @@ class _DocumentsPageState extends State<DocumentsPage> {
               },
             ),
           ),
+
+          // Category Filters
+          SizedBox(
+            height: 52,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 6,
+              ),
+              itemCount: _categories.length,
+              itemBuilder: (context, index) {
+                final category = _categories[index];
+                final isSelected =
+                    provider.selectedCategory == category;
+
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Text(category),
+                    selected: isSelected,
+                    onSelected: (_) {
+                      provider.filterByCategory(category);
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 4),
+
+          // Documents List
           Expanded(
             child: provider.documents.isEmpty
                 ? const EmptyDocuments()
@@ -88,11 +136,16 @@ class _DocumentsPageState extends State<DocumentsPage> {
                             Icons.description,
                             color: Colors.blue,
                           ),
-                          title: Text(doc.title),
+                          title: Text(
+                            doc.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           subtitle: Text(doc.category),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              // Edit
                               IconButton(
                                 icon: const Icon(
                                   Icons.edit,
@@ -114,36 +167,50 @@ class _DocumentsPageState extends State<DocumentsPage> {
                                   }
                                 },
                               ),
+
+                              // Delete
                               IconButton(
                                 icon: const Icon(
                                   Icons.delete,
                                   color: Colors.red,
                                 ),
                                 onPressed: () async {
-                                  final confirm = await showDialog<bool>(
+                                  final confirm =
+                                      await showDialog<bool>(
                                     context: context,
                                     builder: (_) => AlertDialog(
-                                      title: const Text("Delete Document"),
+                                      title: const Text(
+                                        "Delete Document",
+                                      ),
                                       content: const Text(
                                         "Are you sure you want to delete this document?",
                                       ),
                                       actions: [
                                         TextButton(
                                           onPressed: () =>
-                                              Navigator.pop(context, false),
-                                          child: const Text("Cancel"),
+                                              Navigator.pop(
+                                            context,
+                                            false,
+                                          ),
+                                          child:
+                                              const Text("Cancel"),
                                         ),
                                         FilledButton(
                                           onPressed: () =>
-                                              Navigator.pop(context, true),
-                                          child: const Text("Delete"),
+                                              Navigator.pop(
+                                            context,
+                                            true,
+                                          ),
+                                          child:
+                                              const Text("Delete"),
                                         ),
                                       ],
                                     ),
                                   );
 
                                   if (confirm == true) {
-                                    await provider.deleteDocument(index);
+                                    await provider
+                                        .deleteDocument(index);
 
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context)
@@ -167,8 +234,9 @@ class _DocumentsPageState extends State<DocumentsPage> {
           ),
         ],
       ),
+
+      // Add Document
       floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
         onPressed: () async {
           await Navigator.push(
             context,
@@ -181,6 +249,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
             await provider.loadDocuments();
           }
         },
+        child: const Icon(Icons.add),
       ),
     );
   }
