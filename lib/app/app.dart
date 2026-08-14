@@ -6,6 +6,7 @@ import '../features/documents/providers/document_provider.dart';
 import '../features/profile/providers/profile_provider.dart';
 import '../features/security/lock_screen.dart';
 import '../features/security/providers/security_provider.dart';
+import '../features/settings/providers/settings_provider.dart';
 import 'theme/app_theme.dart';
 
 class MyVaultApp extends StatelessWidget {
@@ -24,13 +25,29 @@ class MyVaultApp extends StatelessWidget {
         ChangeNotifierProvider<SecurityProvider>(
           create: (_) => SecurityProvider()..initialize(),
         ),
+        ChangeNotifierProvider<SettingsProvider>(
+          create: (_) => SettingsProvider()..initialize(),
+        ),
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'MyVault',
-        theme: AppTheme.lightTheme,
-        home: const SecurityShell(),
-      ),
+      child: const _MyVaultMaterialApp(),
+    );
+  }
+}
+
+class _MyVaultMaterialApp extends StatelessWidget {
+  const _MyVaultMaterialApp();
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
+
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'MyVault',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: settings.themeMode,
+      home: const SecurityShell(),
     );
   }
 }

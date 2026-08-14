@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../profile/profile_page.dart';
 import '../documents/documents_page.dart';
+import '../profile/profile_page.dart';
 import '../security/security_page.dart';
+import '../settings/settings_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -22,6 +23,18 @@ class DashboardPage extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (_) => const SecurityPage(),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SettingsPage(),
                 ),
               );
             },
@@ -113,11 +126,10 @@ class DashboardPage extends StatelessWidget {
                   title: 'Settings',
                   subtitle: 'App preferences',
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Settings will be available soon.',
-                        ),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SettingsPage(),
                       ),
                     );
                   },
