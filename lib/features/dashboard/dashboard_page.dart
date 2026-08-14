@@ -1,165 +1,46 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../documents/add_document_page.dart';
-import '../documents/documents_page.dart';
-import '../documents/providers/document_provider.dart';
 import '../profile/profile_page.dart';
-import '../profile/providers/profile_provider.dart';
+import '../documents/documents_page.dart';
+import '../security/security_page.dart';
 
-class DashboardPage extends StatefulWidget {
+class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
   @override
-  State<DashboardPage> createState() => _DashboardPageState();
-}
-
-class _DashboardPageState extends State<DashboardPage> {
-  @override
   Widget build(BuildContext context) {
-    final documentProvider = context.watch<DocumentProvider>();
-    final profileProvider = context.watch<ProfileProvider>();
-
-    final documents = documentProvider.documents;
-    final profile = profileProvider.profile;
-
-    final Map<String, int> categoryCounts = {};
-
-    for (final document in documents) {
-      categoryCounts[document.category] =
-          (categoryCounts[document.category] ?? 0) + 1;
-    }
-
-    final recentDocuments = [...documents];
-
-    recentDocuments.sort(
-      (a, b) => b.createdAt.compareTo(a.createdAt),
-    );
-
-    if (recentDocuments.length > 5) {
-      recentDocuments.removeRange(
-        5,
-        recentDocuments.length,
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text("MyVault"),
+        title: const Text('MyVault'),
+        centerTitle: false,
         actions: [
           IconButton(
-            tooltip: "Profile",
-            icon: const Icon(Icons.person),
-            onPressed: () async {
-              await Navigator.push(
+            tooltip: 'Security',
+            icon: const Icon(Icons.security),
+            onPressed: () {
+              Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const ProfilePage(),
+                  builder: (_) => const SecurityPage(),
                 ),
               );
-
-              if (context.mounted) {
-                await profileProvider.loadProfile();
-              }
-            },
-          ),
-
-          IconButton(
-            tooltip: "Documents",
-            icon: const Icon(Icons.folder),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const DocumentsPage(),
-                ),
-              );
-
-              if (context.mounted) {
-                await documentProvider.loadDocuments();
-              }
             },
           ),
         ],
       ),
-
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await documentProvider.loadDocuments();
-          await profileProvider.loadProfile();
-        },
-        child: ListView(
-          padding: const EdgeInsets.all(16),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Profile header
-            Card(
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ProfilePage(),
-                    ),
-                  );
+            _buildWelcomeCard(context),
 
-                  if (context.mounted) {
-                    await profileProvider.loadProfile();
-                  }
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      const CircleAvatar(
-                        radius: 30,
-                        child: Icon(
-                          Icons.person,
-                          size: 32,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              profile?.fullName.isNotEmpty == true
-                                  ? "Hello, ${profile!.fullName}"
-                                  : "Welcome to MyVault",
-                              style: const TextStyle(
-                                fontSize: 19,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              profile != null
-                                  ? "View your profile"
-                                  : "Create your profile",
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(
-                        Icons.chevron_right,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             const Text(
-              "Your Vault",
+              'MyVault',
               style: TextStyle(
-                fontSize: 28,
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -167,294 +48,129 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(height: 6),
 
             Text(
-              "Keep your important documents organized.",
+              'Keep your important information safe and organized.',
               style: TextStyle(
-                fontSize: 15,
-                color: Colors.grey.shade600,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurfaceVariant,
               ),
             ),
 
             const SizedBox(height: 24),
 
-            // Statistics
-            Row(
+            GridView.count(
+              crossAxisCount: 2,
+              crossAxisSpacing: 14,
+              mainAxisSpacing: 14,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              childAspectRatio: 1.15,
               children: [
-                Expanded(
-                  child: _StatCard(
-                    title: "Documents",
-                    value: documents.length.toString(),
-                    icon: Icons.description,
-                  ),
+                _DashboardCard(
+                  icon: Icons.person,
+                  title: 'Profile',
+                  subtitle: 'Personal information',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ProfilePage(),
+                      ),
+                    );
+                  },
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    title: "Categories",
-                    value: categoryCounts.length.toString(),
-                    icon: Icons.category,
-                  ),
+
+                _DashboardCard(
+                  icon: Icons.description,
+                  title: 'Documents',
+                  subtitle: 'Your saved documents',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DocumentsPage(),
+                      ),
+                    );
+                  },
+                ),
+
+                _DashboardCard(
+                  icon: Icons.security,
+                  title: 'Security',
+                  subtitle: 'Protect your vault',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SecurityPage(),
+                      ),
+                    );
+                  },
+                ),
+
+                _DashboardCard(
+                  icon: Icons.settings,
+                  title: 'Settings',
+                  subtitle: 'App preferences',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Settings will be available soon.',
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
 
             const SizedBox(height: 28),
 
-            // Quick Actions
-            const Text(
-              "Quick Actions",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            _buildSecurityBanner(context),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
 
-            Row(
-              children: [
-                Expanded(
-                  child: _ActionCard(
-                    title: "Add Document",
-                    icon: Icons.add_circle,
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              const AddDocumentPage(),
-                        ),
-                      );
-
-                      if (context.mounted) {
-                        await documentProvider
-                            .loadDocuments();
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _ActionCard(
-                    title: "Documents",
-                    icon: Icons.folder_open,
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              const DocumentsPage(),
-                        ),
-                      );
-
-                      if (context.mounted) {
-                        await documentProvider
-                            .loadDocuments();
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _ActionCard(
-                    title: "Profile",
-                    icon: Icons.person,
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ProfilePage(),
-                        ),
-                      );
-
-                      if (context.mounted) {
-                        await profileProvider
-                            .loadProfile();
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 28),
-
-            // Categories
-            if (categoryCounts.isNotEmpty) ...[
-              const Text(
-                "Categories",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              ...categoryCounts.entries.map(
-                (entry) {
-                  return Card(
-                    child: ListTile(
-                      leading: const CircleAvatar(
-                        child: Icon(Icons.folder),
-                      ),
-                      title: Text(entry.key),
-                      trailing: Text(
-                        entry.value.toString(),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 20),
-            ],
-
-            // Recent Documents
-            const Text(
-              "Recently Added",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            if (recentDocuments.isEmpty)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.folder_open,
-                        size: 50,
-                        color: Colors.grey.shade500,
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        "No documents yet",
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "Add your first document to MyVault.",
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              ...recentDocuments.map(
-                (document) {
-                  return Card(
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.description,
-                      ),
-                      title: Text(
-                        document.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text(
-                        document.category,
-                      ),
-                      trailing: const Icon(
-                        Icons.chevron_right,
-                      ),
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                const DocumentsPage(),
-                          ),
-                        );
-
-                        if (context.mounted) {
-                          await documentProvider
-                              .loadDocuments();
-                        }
-                      },
-                    ),
-                  );
-                },
-              ),
-
-            const SizedBox(height: 30),
+            _buildQuickActions(context),
           ],
         ),
       ),
-
-      // Bottom-right quick add button
-      floatingActionButton: FloatingActionButton(
-        tooltip: "Add Document",
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const AddDocumentPage(),
-            ),
-          );
-
-          if (context.mounted) {
-            await documentProvider.loadDocuments();
-          }
-        },
-        child: const Icon(Icons.add),
-      ),
     );
   }
-}
 
-class _StatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-
-  const _StatCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildWelcomeCard(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+        padding: const EdgeInsets.all(20),
+        child: Row(
           children: [
-            Icon(
-              icon,
-              size: 30,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
+            CircleAvatar(
+              radius: 32,
+              backgroundColor:
+                  Theme.of(context).colorScheme.primaryContainer,
+              child: Icon(
+                Icons.account_circle,
+                size: 42,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: TextStyle(
-                color: Colors.grey.shade600,
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Welcome to MyVault',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    'Your personal information vault',
+                  ),
+                ],
               ),
             ),
           ],
@@ -462,16 +178,122 @@ class _StatCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildSecurityBanner(BuildContext context) {
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const SecurityPage(),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color:
+                      Theme.of(context).colorScheme.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.shield,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Secure Your MyVault',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Set up an app PIN to protect your private data.',
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActions(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Quick Actions',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ProfilePage(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.person),
+                label: const Text('Profile'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const DocumentsPage(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.description),
+                label: const Text('Documents'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
-class _ActionCard extends StatelessWidget {
-  final String title;
+class _DashboardCard extends StatelessWidget {
   final IconData icon;
+  final String title;
+  final String subtitle;
   final VoidCallback onTap;
 
-  const _ActionCard({
-    required this.title,
+  const _DashboardCard({
     required this.icon,
+    required this.title,
+    required this.subtitle,
     required this.onTap,
   });
 
@@ -482,22 +304,33 @@ class _ActionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: 18,
-            horizontal: 8,
-          ),
+          padding: const EdgeInsets.all(16),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
-                size: 32,
+                size: 40,
+                color: Theme.of(context).colorScheme.primary,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Text(
                 title,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontWeight: FontWeight.w600,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant,
                 ),
               ),
             ],
