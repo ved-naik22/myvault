@@ -15,6 +15,8 @@ class AddDocumentPage extends StatefulWidget {
     this.documentIndex,
   });
 
+  bool get isEditing => document != null && documentIndex != null;
+
   @override
   State<AddDocumentPage> createState() => _AddDocumentPageState();
 }
@@ -22,8 +24,8 @@ class AddDocumentPage extends StatefulWidget {
 class _AddDocumentPageState extends State<AddDocumentPage> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
+  late final TextEditingController _titleController;
+  late final TextEditingController _notesController;
 
   String _selectedCategory = "Aadhaar";
   String? _selectedFilePath;
@@ -40,17 +42,23 @@ class _AddDocumentPageState extends State<AddDocumentPage> {
     "Other",
   ];
 
-@override
-void initState() {
-  super.initState();
+  @override
+  void initState() {
+    super.initState();
 
-  if (widget.document != null) {
-    _titleController.text = widget.document!.title;
-    _notesController.text = widget.document!.notes;
-    _selectedCategory = widget.document!.category;
-    _selectedFilePath = widget.document!.filePath;
+    _titleController = TextEditingController(
+      text: widget.document?.title ?? "",
+    );
+
+    _notesController = TextEditingController(
+      text: widget.document?.notes ?? "",
+    );
+
+    if (widget.document != null) {
+      _selectedCategory = widget.document!.category;
+      _selectedFilePath = widget.document!.filePath;
+    }
   }
-}
 
   @override
   void dispose() {
@@ -62,7 +70,12 @@ void initState() {
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      allowedExtensions: [
+        'pdf',
+        'jpg',
+        'jpeg',
+        'png',
+      ],
     );
 
     if (result != null && result.files.single.path != null) {
@@ -73,61 +86,78 @@ void initState() {
   }
 
   Future<void> _saveDocument() async {
-  if (!_formKey.currentState!.validate()) {
-    return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_selectedFilePath == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please select a document."),
+        ),
+      );
+      return;
+    }
+
+    final provider = context.read<DocumentProvider>();
+
+    if (widget.isEditing) {
+      final oldDocument = widget.document!;
+
+      final updatedDocument = DocumentModel(
+        title: _titleController.text.trim(),
+        category: _selectedCategory,
+        notes: _notesController.text.trim(),
+        filePath: _selectedFilePath!,
+        createdAt: oldDocument.createdAt,
+      );
+
+      await provider.updateDocument(
+        widget.documentIndex!,
+        updatedDocument,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Document updated successfully!"),
+        ),
+      );
+    } else {
+      final document = DocumentModel(
+        title: _titleController.text.trim(),
+        category: _selectedCategory,
+        notes: _notesController.text.trim(),
+        filePath: _selectedFilePath!,
+        createdAt: DateTime.now(),
+      );
+
+      await provider.addDocument(document);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Document saved successfully!"),
+        ),
+      );
+    }
+
+    if (!mounted) return;
+
+    Navigator.pop(context);
   }
 
-  if (_selectedFilePath == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Please select a document."),
-      ),
-    );
-    return;
-  }
-
-  final document = DocumentModel(
-    title: _titleController.text.trim(),
-    category: _selectedCategory,
-    notes: _notesController.text.trim(),
-    filePath: _selectedFilePath!,
-    createdAt: widget.document?.createdAt ?? DateTime.now(),
-  );
-
-  final provider = context.read<DocumentProvider>();
-
-  if (widget.document == null) {
-    await provider.addDocument(document);
-  } else {
-    await provider.updateDocument(
-      widget.documentIndex!,
-      document,
-    );
-  }
-
-  if (!mounted) return;
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        widget.document == null
-            ? "Document saved successfully!"
-            : "Document updated successfully!",
-      ),
-    ),
-  );
-
-  Navigator.pop(context);
-}
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.isEditing;
+
     return Scaffold(
       appBar: AppBar(
-       title: Text(
-  widget.document == null
-      ? "Add Document"
-      : "Edit Document",
-),
+        title: Text(
+          isEditing ? "Edit Document" : "Add Document",
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -146,6 +176,7 @@ void initState() {
                   if (value == null || value.trim().isEmpty) {
                     return "Please enter a document title";
                   }
+
                   return null;
                 },
               ),
@@ -159,17 +190,17 @@ void initState() {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.category),
                 ),
-                items: _categories
-                    .map(
-                      (category) => DropdownMenuItem(
-                        value: category,
-                        child: Text(category),
-                      ),
-                    )
-                    .toList(),
+                items: _categories.map((category) {
+                  return DropdownMenuItem<String>(
+                    value: category,
+                    child: Text(category),
+                  );
+                }).toList(),
                 onChanged: (value) {
+                  if (value == null) return;
+
                   setState(() {
-                    _selectedCategory = value!;
+                    _selectedCategory = value;
                   });
                 },
               ),
@@ -199,7 +230,9 @@ void initState() {
 
               Card(
                 child: ListTile(
-                  leading: const Icon(Icons.insert_drive_file),
+                  leading: const Icon(
+                    Icons.insert_drive_file,
+                  ),
                   title: Text(
                     _selectedFilePath ?? "No file selected",
                     maxLines: 2,
@@ -214,12 +247,14 @@ void initState() {
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: _saveDocument,
-                  icon: const Icon(Icons.save),
+                  icon: Icon(
+                    isEditing ? Icons.update : Icons.save,
+                  ),
                   label: Text(
-                    widget.document == null
-                        ? "Save Document"
-                        : "Update Document",
-),
+                    isEditing
+                        ? "Update Document"
+                        : "Save Document",
+                  ),
                 ),
               ),
             ],

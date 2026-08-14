@@ -5,17 +5,9 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      colorSchemeSeed: Colors.blue,
-      scaffoldBackgroundColor: const Color(0xFFF7F9FC),
-      appBarTheme: const AppBarTheme(
-        centerTitle: false,
-      ),
-      cardTheme: const CardThemeData(
-        elevation: 1,
-        margin: EdgeInsets.zero,
-      ),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(),
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.blue,
+        brightness: Brightness.light,
       ),
     );
   }
@@ -24,16 +16,9 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      colorSchemeSeed: Colors.blue,
-      appBarTheme: const AppBarTheme(
-        centerTitle: false,
-      ),
-      cardTheme: const CardThemeData(
-        elevation: 1,
-        margin: EdgeInsets.zero,
-      ),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(),
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.blue,
+        brightness: Brightness.dark,
       ),
     );
   }

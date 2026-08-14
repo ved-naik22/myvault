@@ -20,17 +20,14 @@ class MyVaultApp extends StatelessWidget {
           create: (_) =>
               ProfileProvider()..loadProfile(),
         ),
-
         ChangeNotifierProvider(
           create: (_) =>
               DocumentProvider()..loadDocuments(),
         ),
-
         ChangeNotifierProvider(
           create: (_) =>
               SecurityProvider()..initialize(),
         ),
-
         ChangeNotifierProvider(
           create: (_) =>
               SettingsProvider()..initialize(),
@@ -47,7 +44,7 @@ class MyVaultApp extends StatelessWidget {
             title: 'MyVault',
 
             theme: AppTheme.lightTheme,
-
+            darkTheme: AppTheme.darkTheme,
             themeMode: settings.themeMode,
 
             home: const _VaultGate(),
