@@ -13,7 +13,6 @@ class DashboardPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('MyVault'),
-        centerTitle: false,
         actions: [
           IconButton(
             tooltip: 'Security',
@@ -46,14 +45,14 @@ class DashboardPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildWelcomeCard(context),
+            _welcomeCard(context),
 
             const SizedBox(height: 24),
 
             const Text(
               'MyVault',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 26,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -75,9 +74,9 @@ class DashboardPage extends StatelessWidget {
               crossAxisCount: 2,
               crossAxisSpacing: 14,
               mainAxisSpacing: 14,
+              childAspectRatio: 1.1,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 1.15,
               children: [
                 _DashboardCard(
                   icon: Icons.person,
@@ -96,7 +95,7 @@ class DashboardPage extends StatelessWidget {
                 _DashboardCard(
                   icon: Icons.description,
                   title: 'Documents',
-                  subtitle: 'Your saved documents',
+                  subtitle: 'Saved documents',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -139,18 +138,18 @@ class DashboardPage extends StatelessWidget {
 
             const SizedBox(height: 28),
 
-            _buildSecurityBanner(context),
+            _securityBanner(context),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
 
-            _buildQuickActions(context),
+            _quickActions(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildWelcomeCard(BuildContext context) {
+  Widget _welcomeCard(BuildContext context) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -162,7 +161,7 @@ class DashboardPage extends StatelessWidget {
                   Theme.of(context).colorScheme.primaryContainer,
               child: Icon(
                 Icons.account_circle,
-                size: 42,
+                size: 44,
                 color: Theme.of(context).colorScheme.primary,
               ),
             ),
@@ -191,7 +190,7 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSecurityBanner(BuildContext context) {
+  Widget _securityBanner(BuildContext context) {
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -246,7 +245,7 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
+  Widget _quickActions(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

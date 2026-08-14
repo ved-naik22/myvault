@@ -26,6 +26,9 @@ dependencies:
 
   syncfusion_flutter_pdfviewer: ^30.2.7
 
+  crypto: ^3.0.7
+  flutter_secure_storage: ^9.2.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

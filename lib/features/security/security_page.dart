@@ -6,367 +6,515 @@ import 'providers/security_provider.dart';
 class SecurityPage extends StatelessWidget {
   const SecurityPage({super.key});
 
-  Future<String?> _showPinDialog(
-    BuildContext context, {
-    required String title,
-    required String buttonText,
-  }) async {
-    final controller = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    final result = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(title),
-          content: Form(
-            key: formKey,
-            child: TextFormField(
-              controller: controller,
-              autofocus: true,
-              obscureText: true,
-              keyboardType: TextInputType.number,
-              maxLength: 4,
-              decoration: const InputDecoration(
-                labelText: '4-digit PIN',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value == null || value.length != 4) {
-                  return 'Enter exactly 4 digits';
-                }
-
-                if (!RegExp(r'^\d{4}$').hasMatch(value)) {
-                  return 'PIN must contain numbers only';
-                }
-
-                return null;
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  Navigator.of(dialogContext).pop(
-                    controller.text,
-                  );
-                }
-              },
-              child: Text(buttonText),
-            ),
-          ],
-        );
-      },
-    );
-
-    controller.dispose();
-
-    return result;
-  }
-
-  Future<String?> _showConfirmPinDialog(
-    BuildContext context,
-    String firstPin,
-  ) async {
-    final controller = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    final result = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Confirm PIN'),
-          content: Form(
-            key: formKey,
-            child: TextFormField(
-              controller: controller,
-              autofocus: true,
-              obscureText: true,
-              keyboardType: TextInputType.number,
-              maxLength: 4,
-              decoration: const InputDecoration(
-                labelText: 'Confirm PIN',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value != firstPin) {
-                  return 'PINs do not match';
-                }
-
-                return null;
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  Navigator.of(dialogContext).pop(
-                    controller.text,
-                  );
-                }
-              },
-              child: const Text('Confirm'),
-            ),
-          ],
-        );
-      },
-    );
-
-    controller.dispose();
-
-    return result;
-  }
-
-  Future<void> _enableLock(BuildContext context) async {
-    final pin = await _showPinDialog(
-      context,
-      title: 'Create App PIN',
-      buttonText: 'Next',
-    );
-
-    if (pin == null || !context.mounted) {
-      return;
-    }
-
-    final confirmedPin = await _showConfirmPinDialog(
-      context,
-      pin,
-    );
-
-    if (confirmedPin == null || !context.mounted) {
-      return;
-    }
-
-    await context.read<SecurityProvider>().enableLock(
-          confirmedPin,
-        );
-
-    if (!context.mounted) {
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('App Lock enabled successfully.'),
-      ),
-    );
-  }
-
-  Future<void> _changePin(BuildContext context) async {
-    final pin = await _showPinDialog(
-      context,
-      title: 'Create New PIN',
-      buttonText: 'Next',
-    );
-
-    if (pin == null || !context.mounted) {
-      return;
-    }
-
-    final confirmedPin = await _showConfirmPinDialog(
-      context,
-      pin,
-    );
-
-    if (confirmedPin == null || !context.mounted) {
-      return;
-    }
-
-    await context.read<SecurityProvider>().changePin(
-          confirmedPin,
-        );
-
-    if (!context.mounted) {
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('PIN changed successfully.'),
-      ),
-    );
-  }
-
-  Future<void> _disableLock(BuildContext context) async {
-    final provider = context.read<SecurityProvider>();
-
-    final pin = await _showPinDialog(
-      context,
-      title: 'Enter Current PIN',
-      buttonText: 'Disable',
-    );
-
-    if (pin == null || !context.mounted) {
-      return;
-    }
-
-    final valid = await provider.verifyPin(pin);
-
-    if (!context.mounted) {
-      return;
-    }
-
-    if (!valid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Incorrect PIN.'),
-        ),
-      );
-      return;
-    }
-
-    await provider.disableLock();
-
-    if (!context.mounted) {
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('App Lock disabled.'),
-      ),
-    );
-  }
-
-  void _lockNow(BuildContext context) {
-    final provider = context.read<SecurityProvider>();
-
-    provider.lockApp();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (context.mounted) {
-        Navigator.of(context).pop();
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final security = context.watch<SecurityProvider>();
+
+    if (security.isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Security'),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Security'),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         children: [
+          _SecurityStatusCard(
+            security: security,
+          ),
+
+          const SizedBox(height: 16),
+
+          Card(
+            child: SwitchListTile(
+              secondary: Icon(
+                security.lockEnabled
+                    ? Icons.lock
+                    : Icons.lock_open,
+              ),
+              title: const Text('App Lock'),
+              subtitle: Text(
+                security.lockEnabled
+                    ? 'PIN protection is enabled.'
+                    : 'PIN protection is disabled.',
+              ),
+              value: security.lockEnabled,
+              onChanged: security.hasPin
+                  ? (value) async {
+                      if (value) {
+                        await security.enableLock();
+                      } else {
+                        await security.disableLock();
+                      }
+                    }
+                  : null,
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.pin),
+              title: Text(
+                security.hasPin ? 'Change PIN' : 'Create PIN',
+              ),
+              subtitle: Text(
+                security.hasPin
+                    ? 'Change your existing 4-digit PIN.'
+                    : 'Create a 4-digit PIN for MyVault.',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                if (security.hasPin) {
+                  _changePin(
+                    context,
+                    security,
+                  );
+                } else {
+                  _createPin(
+                    context,
+                    security,
+                  );
+                }
+              },
+            ),
+          ),
+
+          if (security.hasPin) ...[
+            const SizedBox(height: 12),
+            Card(
+              child: ListTile(
+                leading: const Icon(
+                  Icons.delete_outline,
+                ),
+                title: const Text('Remove PIN'),
+                subtitle: const Text(
+                  'Disable PIN protection.',
+                ),
+                trailing: const Icon(
+                  Icons.chevron_right,
+                ),
+                onTap: () {
+                  _removePin(
+                    context,
+                    security,
+                  );
+                },
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 20),
+
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(18),
               child: Row(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primaryContainer,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.security,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary,
-                    ),
+                  Icon(
+                    Icons.info_outline,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary,
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   const Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'MyVault Security',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 5),
-                        Text(
-                          'Protect your private information with an app PIN.',
-                        ),
-                      ],
+                    child: Text(
+                      'Your PIN is stored using secure device storage. '
+                      'Never share your PIN with anyone.',
                     ),
                   ),
                 ],
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
 
-          const SizedBox(height: 20),
+  Future<void> _createPin(
+    BuildContext context,
+    SecurityProvider security,
+  ) async {
+    final pinController = TextEditingController();
+    final confirmController = TextEditingController();
 
-          Card(
-            child: SwitchListTile(
-              secondary: const Icon(Icons.lock),
-              title: const Text(
-                'App Lock',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Create PIN'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: pinController,
+                keyboardType: TextInputType.number,
+                obscureText: true,
+                maxLength: 4,
+                decoration: const InputDecoration(
+                  labelText: '4-digit PIN',
+                  prefixIcon: Icon(
+                    Icons.lock_outline,
+                  ),
                 ),
               ),
-              subtitle: Text(
-                security.isLockEnabled
-                    ? 'Your vault is protected by a PIN.'
-                    : 'Require a PIN when opening MyVault.',
+              TextField(
+                controller: confirmController,
+                keyboardType: TextInputType.number,
+                obscureText: true,
+                maxLength: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Confirm PIN',
+                  prefixIcon: Icon(
+                    Icons.lock_outline,
+                  ),
+                ),
               ),
-              value: security.isLockEnabled,
-              onChanged: (value) {
-                if (value) {
-                  _enableLock(context);
-                } else {
-                  _disableLock(context);
-                }
-              },
-            ),
+            ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(
+                  dialogContext,
+                  false,
+                );
+              },
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final pin = pinController.text.trim();
+                final confirm =
+                    confirmController.text.trim();
 
-          if (security.isLockEnabled) ...[
-            const SizedBox(height: 12),
+                if (!RegExp(r'^\d{4}$').hasMatch(pin)) {
+                  if (!dialogContext.mounted) {
+                    return;
+                  }
 
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.password),
-                title: const Text('Change PIN'),
-                subtitle: const Text(
-                  'Change your 4-digit PIN.',
+                  _error(
+                    dialogContext,
+                    'PIN must contain exactly 4 digits.',
+                  );
+                  return;
+                }
+
+                if (pin != confirm) {
+                  if (!dialogContext.mounted) {
+                    return;
+                  }
+
+                  _error(
+                    dialogContext,
+                    'PINs do not match.',
+                  );
+                  return;
+                }
+
+                final success =
+                    await security.setPin(pin);
+
+                if (!dialogContext.mounted) {
+                  return;
+                }
+
+                Navigator.pop(
+                  dialogContext,
+                  success,
+                );
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    pinController.dispose();
+    confirmController.dispose();
+
+    if (!context.mounted) {
+      return;
+    }
+
+    if (result == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'PIN created successfully.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _changePin(
+    BuildContext context,
+    SecurityProvider security,
+  ) async {
+    final oldController = TextEditingController();
+    final newController = TextEditingController();
+    final confirmController = TextEditingController();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Change PIN'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: oldController,
+                keyboardType: TextInputType.number,
+                obscureText: true,
+                maxLength: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Current PIN',
                 ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => _changePin(context),
+              ),
+              TextField(
+                controller: newController,
+                keyboardType: TextInputType.number,
+                obscureText: true,
+                maxLength: 4,
+                decoration: const InputDecoration(
+                  labelText: 'New PIN',
+                ),
+              ),
+              TextField(
+                controller: confirmController,
+                keyboardType: TextInputType.number,
+                obscureText: true,
+                maxLength: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Confirm new PIN',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(
+                  dialogContext,
+                  false,
+                );
+              },
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final newPin =
+                    newController.text.trim();
+                final confirm =
+                    confirmController.text.trim();
+
+                if (!RegExp(r'^\d{4}$').hasMatch(newPin)) {
+                  if (!dialogContext.mounted) {
+                    return;
+                  }
+
+                  _error(
+                    dialogContext,
+                    'New PIN must contain exactly 4 digits.',
+                  );
+                  return;
+                }
+
+                if (newPin != confirm) {
+                  if (!dialogContext.mounted) {
+                    return;
+                  }
+
+                  _error(
+                    dialogContext,
+                    'New PINs do not match.',
+                  );
+                  return;
+                }
+
+                final success =
+                    await security.changePin(
+                  oldController.text.trim(),
+                  newPin,
+                );
+
+                if (!dialogContext.mounted) {
+                  return;
+                }
+
+                if (!success) {
+                  _error(
+                    dialogContext,
+                    'Current PIN is incorrect or new PIN is invalid.',
+                  );
+                  return;
+                }
+
+                Navigator.pop(
+                  dialogContext,
+                  true,
+                );
+              },
+              child: const Text('Change'),
+            ),
+          ],
+        );
+      },
+    );
+
+    oldController.dispose();
+    newController.dispose();
+    confirmController.dispose();
+
+    if (!context.mounted) {
+      return;
+    }
+
+    if (result == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'PIN changed successfully.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _removePin(
+    BuildContext context,
+    SecurityProvider security,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Remove PIN?'),
+          content: const Text(
+            'This will disable MyVault app lock.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(
+                  dialogContext,
+                  false,
+                );
+              },
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(
+                  dialogContext,
+                  true,
+                );
+              },
+              child: const Text('Remove'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    await security.removePin();
+
+    if (!context.mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('PIN removed.'),
+      ),
+    );
+  }
+
+  void _error(
+    BuildContext context,
+    String message,
+  ) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+      ),
+    );
+  }
+}
+
+class _SecurityStatusCard extends StatelessWidget {
+  final SecurityProvider security;
+
+  const _SecurityStatusCard({
+    required this.security,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final protected =
+        security.lockEnabled && security.hasPin;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 30,
+              child: Icon(
+                protected
+                    ? Icons.verified_user
+                    : Icons.security,
+                size: 32,
               ),
             ),
-
-            const SizedBox(height: 12),
-
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.lock_outline),
-                title: const Text('Lock Now'),
-                subtitle: const Text(
-                  'Lock MyVault immediately.',
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => _lockNow(context),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    protected
+                        ? 'Vault Protected'
+                        : 'Vault Not Protected',
+                    style: const TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    protected
+                        ? 'Your MyVault is protected by a PIN.'
+                        : 'Create a PIN to protect your vault.',
+                  ),
+                ],
               ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }

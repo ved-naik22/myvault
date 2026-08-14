@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../features/dashboard/dashboard_page.dart';
-import '../features/documents/providers/document_provider.dart';
 import '../features/profile/providers/profile_provider.dart';
-import '../features/security/lock_screen.dart';
+import '../features/documents/providers/document_provider.dart';
 import '../features/security/providers/security_provider.dart';
+import '../features/security/security_lock_page.dart';
 import '../features/settings/providers/settings_provider.dart';
 import 'theme/app_theme.dart';
 
@@ -16,82 +16,105 @@ class MyVaultApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<ProfileProvider>(
-          create: (_) => ProfileProvider()..loadProfile(),
+        ChangeNotifierProvider(
+          create: (_) =>
+              ProfileProvider()..loadProfile(),
         ),
-        ChangeNotifierProvider<DocumentProvider>(
-          create: (_) => DocumentProvider()..loadDocuments(),
+
+        ChangeNotifierProvider(
+          create: (_) =>
+              DocumentProvider()..loadDocuments(),
         ),
-        ChangeNotifierProvider<SecurityProvider>(
-          create: (_) => SecurityProvider()..initialize(),
+
+        ChangeNotifierProvider(
+          create: (_) =>
+              SecurityProvider()..initialize(),
         ),
-        ChangeNotifierProvider<SettingsProvider>(
-          create: (_) => SettingsProvider()..initialize(),
+
+        ChangeNotifierProvider(
+          create: (_) =>
+              SettingsProvider()..initialize(),
         ),
       ],
-      child: const _MyVaultMaterialApp(),
+      child: Consumer<SettingsProvider>(
+        builder: (
+          context,
+          settings,
+          child,
+        ) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'MyVault',
+
+            theme: AppTheme.lightTheme,
+
+            themeMode: settings.themeMode,
+
+            home: const _VaultGate(),
+          );
+        },
+      ),
     );
   }
 }
 
-class _MyVaultMaterialApp extends StatelessWidget {
-  const _MyVaultMaterialApp();
+class _VaultGate extends StatelessWidget {
+  const _VaultGate();
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<SettingsProvider>();
+    return Consumer<SecurityProvider>(
+      builder: (
+        context,
+        security,
+        child,
+      ) {
+        if (security.isLoading) {
+          return const _SecurityLoadingPage();
+        }
 
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'MyVault',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: settings.themeMode,
-      home: const SecurityShell(),
+        if (security.lockEnabled &&
+            security.hasPin &&
+            !security.isUnlocked) {
+          return const SecurityLockPage();
+        }
+
+        return const DashboardPage();
+      },
     );
   }
 }
 
-class SecurityShell extends StatelessWidget {
-  const SecurityShell({super.key});
+class _SecurityLoadingPage
+    extends StatelessWidget {
+  const _SecurityLoadingPage();
 
   @override
   Widget build(BuildContext context) {
-    return const _SecurityShellContent();
-  }
-}
-
-class _SecurityShellContent extends StatelessWidget {
-  const _SecurityShellContent();
-
-  @override
-  Widget build(BuildContext context) {
-    final security = context.watch<SecurityProvider>();
-
-    if (security.isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const DashboardPage(),
-
-        Positioned.fill(
-          child: IgnorePointer(
-            ignoring: !security.isLocked,
-            child: AnimatedOpacity(
-              opacity: security.isLocked ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 150),
-              child: const LockScreen(),
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.lock_outline,
+              size: 52,
+              color: Theme.of(context)
+                  .colorScheme
+                  .primary,
             ),
-          ),
+            const SizedBox(height: 20),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              'Checking security...',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge,
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

@@ -7,21 +7,17 @@ class DocumentProvider extends ChangeNotifier {
   final DocumentService _service = DocumentService();
 
   List<DocumentModel> _documents = [];
-  List<DocumentModel> _filteredDocuments = [];
 
-  String _searchQuery = "";
-  String _selectedCategory = "All";
-
-  List<DocumentModel> get documents => _filteredDocuments;
-
-  String get selectedCategory => _selectedCategory;
+  List<DocumentModel> get documents => _documents;
 
   Future<void> loadDocuments() async {
     _documents = await _service.getDocuments();
-    _applyFilters();
+    notifyListeners();
   }
 
-  Future<void> addDocument(DocumentModel document) async {
+  Future<void> addDocument(
+    DocumentModel document,
+  ) async {
     await _service.addDocument(document);
     await loadDocuments();
   }
@@ -30,57 +26,74 @@ class DocumentProvider extends ChangeNotifier {
     int index,
     DocumentModel document,
   ) async {
-    await _service.updateDocument(index, document);
+    await _service.updateDocument(
+      index,
+      document,
+    );
+
     await loadDocuments();
   }
 
-  Future<void> deleteDocument(int index) async {
-    if (index < 0 || index >= _filteredDocuments.length) {
-      return;
-    }
-
-    final document = _filteredDocuments[index];
-
-    final originalIndex = _documents.indexOf(document);
-
-    if (originalIndex == -1) {
-      return;
-    }
-
-    await _service.deleteDocument(originalIndex);
+  Future<void> deleteDocument(
+    int index,
+  ) async {
+    await _service.deleteDocument(index);
     await loadDocuments();
   }
 
-  void searchDocuments(String query) {
-    _searchQuery = query.trim().toLowerCase();
-    _applyFilters();
+  Future<void> toggleFavorite(
+    int index,
+  ) async {
+    if (index < 0 ||
+        index >= _documents.length) {
+      return;
+    }
+
+    final document = _documents[index];
+
+    final updatedDocument = DocumentModel(
+      title: document.title,
+      category: document.category,
+      notes: document.notes,
+      filePath: document.filePath,
+      createdAt: document.createdAt,
+      isFavorite: !document.isFavorite,
+      isPinned: document.isPinned,
+    );
+
+    await _service.updateDocument(
+      index,
+      updatedDocument,
+    );
+
+    await loadDocuments();
   }
 
-  void filterByCategory(String category) {
-    _selectedCategory = category;
-    _applyFilters();
-  }
+  Future<void> togglePinned(
+    int index,
+  ) async {
+    if (index < 0 ||
+        index >= _documents.length) {
+      return;
+    }
 
-  void clearFilters() {
-    _searchQuery = "";
-    _selectedCategory = "All";
-    _applyFilters();
-  }
+    final document = _documents[index];
 
-  void _applyFilters() {
-    _filteredDocuments = _documents.where((document) {
-      final matchesSearch =
-          _searchQuery.isEmpty ||
-          document.title.toLowerCase().contains(_searchQuery) ||
-          document.category.toLowerCase().contains(_searchQuery);
+    final updatedDocument = DocumentModel(
+      title: document.title,
+      category: document.category,
+      notes: document.notes,
+      filePath: document.filePath,
+      createdAt: document.createdAt,
+      isFavorite: document.isFavorite,
+      isPinned: !document.isPinned,
+    );
 
-      final matchesCategory =
-          _selectedCategory == "All" ||
-          document.category == _selectedCategory;
+    await _service.updateDocument(
+      index,
+      updatedDocument,
+    );
 
-      return matchesSearch && matchesCategory;
-    }).toList();
-
-    notifyListeners();
+    await loadDocuments();
   }
 }

@@ -1,62 +1,87 @@
-import 'package:hive_flutter/hive_flutter.dart';
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SecurityService {
-  static const String boxName = 'securityBox';
+  static const String _pinHashKey =
+      'myvault_pin_hash';
 
-  static const String _enabledKey = 'enabled';
-  static const String _pinKey = 'pin';
+  static const String _lockEnabledKey =
+      'myvault_lock_enabled';
 
-  Future<Box<dynamic>> _openBox() async {
-    if (Hive.isBoxOpen(boxName)) {
-      return Hive.box<dynamic>(boxName);
-    }
-
-    return Hive.openBox<dynamic>(boxName);
-  }
+  final FlutterSecureStorage _storage =
+      const FlutterSecureStorage();
 
   Future<bool> isLockEnabled() async {
-    final box = await _openBox();
+    final value = await _storage.read(
+      key: _lockEnabledKey,
+    );
 
-    return box.get(
-      _enabledKey,
-      defaultValue: false,
-    ) as bool;
+    return value == 'true';
+  }
+
+  Future<void> setLockEnabled(
+    bool enabled,
+  ) async {
+    await _storage.write(
+      key: _lockEnabledKey,
+      value: enabled.toString(),
+    );
   }
 
   Future<bool> hasPin() async {
-    final box = await _openBox();
+    final hash = await _storage.read(
+      key: _pinHashKey,
+    );
 
-    return box.get(_pinKey) != null;
+    return hash != null && hash.isNotEmpty;
   }
 
-  Future<void> enableLock(String pin) async {
-    final box = await _openBox();
+  Future<void> setPin(
+    String pin,
+  ) async {
+    final hash = _hashPin(pin);
 
-    await box.put(_pinKey, pin);
-    await box.put(_enabledKey, true);
+    await _storage.write(
+      key: _pinHashKey,
+      value: hash,
+    );
   }
 
-  Future<void> disableLock() async {
-    final box = await _openBox();
+  Future<bool> verifyPin(
+    String pin,
+  ) async {
+    final storedHash = await _storage.read(
+      key: _pinHashKey,
+    );
 
-    await box.put(_enabledKey, false);
-  }
-
-  Future<void> changePin(String newPin) async {
-    final box = await _openBox();
-
-    await box.put(_pinKey, newPin);
-  }
-
-  Future<bool> verifyPin(String pin) async {
-    final box = await _openBox();
-
-    final savedPin = box.get(_pinKey) as String?;
-
-    if (savedPin == null) {
+    if (storedHash == null ||
+        storedHash.isEmpty) {
       return false;
     }
 
-    return savedPin == pin;
+    return storedHash == _hashPin(pin);
+  }
+
+  Future<void> removePin() async {
+    await _storage.delete(
+      key: _pinHashKey,
+    );
+
+    await _storage.write(
+      key: _lockEnabledKey,
+      value: 'false',
+    );
+  }
+
+  String _hashPin(
+    String pin,
+  ) {
+    return sha256
+        .convert(
+          utf8.encode(pin),
+        )
+        .toString();
   }
 }

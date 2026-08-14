@@ -3,23 +3,22 @@ import 'package:provider/provider.dart';
 
 import 'providers/security_provider.dart';
 
-class LockScreen extends StatefulWidget {
-  const LockScreen({
+class SecurityLockPage extends StatefulWidget {
+  const SecurityLockPage({
     super.key,
-    required this.child,
   });
 
-  final Widget child;
-
   @override
-  State<LockScreen> createState() => _LockScreenState();
+  State<SecurityLockPage> createState() =>
+      _SecurityLockPageState();
 }
 
-class _LockScreenState extends State<LockScreen> {
+class _SecurityLockPageState
+    extends State<SecurityLockPage> {
   final TextEditingController _pinController =
       TextEditingController();
 
-  bool _isChecking = false;
+  bool _isVerifying = false;
   String? _errorMessage;
 
   @override
@@ -29,13 +28,9 @@ class _LockScreenState extends State<LockScreen> {
   }
 
   Future<void> _unlock() async {
-    if (_isChecking) {
-      return;
-    }
-
     final pin = _pinController.text.trim();
 
-    if (pin.length != 4) {
+    if (!RegExp(r'^\d{4}$').hasMatch(pin)) {
       setState(() {
         _errorMessage =
             'Enter your 4-digit PIN.';
@@ -44,7 +39,7 @@ class _LockScreenState extends State<LockScreen> {
     }
 
     setState(() {
-      _isChecking = true;
+      _isVerifying = true;
       _errorMessage = null;
     });
 
@@ -58,42 +53,26 @@ class _LockScreenState extends State<LockScreen> {
       return;
     }
 
-    setState(() {
-      _isChecking = false;
-    });
-
     if (success) {
       _pinController.clear();
+
+      setState(() {
+        _isVerifying = false;
+        _errorMessage = null;
+      });
+
       return;
     }
 
-    _pinController.clear();
-
     setState(() {
-      _errorMessage =
-          'Incorrect PIN. Please try again.';
+      _isVerifying = false;
+      _errorMessage = 'Incorrect PIN.';
+      _pinController.clear();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final security =
-        context.watch<SecurityProvider>();
-
-    if (security.isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    if (!security.lockEnabled ||
-        !security.hasPin ||
-        security.isUnlocked) {
-      return widget.child;
-    }
-
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -107,14 +86,18 @@ class _LockScreenState extends State<LockScreen> {
                 mainAxisAlignment:
                     MainAxisAlignment.center,
                 children: [
-                  CircleAvatar(
-                    radius: 48,
-                    backgroundColor: Theme.of(context)
-                        .colorScheme
-                        .primaryContainer,
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primaryContainer,
+                      shape: BoxShape.circle,
+                    ),
                     child: Icon(
                       Icons.lock,
-                      size: 48,
+                      size: 50,
                       color: Theme.of(context)
                           .colorScheme
                           .primary,
@@ -123,24 +106,26 @@ class _LockScreenState extends State<LockScreen> {
 
                   const SizedBox(height: 28),
 
-                  const Text(
-                    'MyVault Locked',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Text(
+                    'MyVault is Locked',
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(
+                          fontWeight:
+                              FontWeight.bold,
+                        ),
+                    textAlign: TextAlign.center,
                   ),
 
                   const SizedBox(height: 8),
 
                   Text(
                     'Enter your PIN to access your vault.',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyLarge,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurfaceVariant,
-                    ),
                   ),
 
                   const SizedBox(height: 32),
@@ -151,35 +136,29 @@ class _LockScreenState extends State<LockScreen> {
                         TextInputType.number,
                     obscureText: true,
                     maxLength: 4,
-                    textAlign: TextAlign.center,
                     autofocus: true,
-                    onSubmitted: (_) => _unlock(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 26,
+                      letterSpacing: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                     decoration: InputDecoration(
-                      labelText: 'PIN',
+                      labelText: '4-digit PIN',
                       hintText: '••••',
                       prefixIcon: const Icon(
                         Icons.lock_outline,
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(14),
-                      ),
+                      border: const OutlineInputBorder(),
+                      errorText: _errorMessage,
+                      counterText: '',
                     ),
+                    onSubmitted: (_) {
+                      if (!_isVerifying) {
+                        _unlock();
+                      }
+                    },
                   ),
-
-                  if (_errorMessage != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      _errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .error,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
 
                   const SizedBox(height: 20),
 
@@ -188,8 +167,8 @@ class _LockScreenState extends State<LockScreen> {
                     height: 52,
                     child: FilledButton.icon(
                       onPressed:
-                          _isChecking ? null : _unlock,
-                      icon: _isChecking
+                          _isVerifying ? null : _unlock,
+                      icon: _isVerifying
                           ? const SizedBox(
                               width: 20,
                               height: 20,
@@ -202,11 +181,21 @@ class _LockScreenState extends State<LockScreen> {
                               Icons.lock_open,
                             ),
                       label: Text(
-                        _isChecking
+                        _isVerifying
                             ? 'Checking...'
-                            : 'Unlock MyVault',
+                            : 'Unlock Vault',
                       ),
                     ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  Text(
+                    'Your vault is protected by your PIN.',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall,
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),

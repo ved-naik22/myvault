@@ -6,89 +6,142 @@ class SecurityProvider extends ChangeNotifier {
   final SecurityService _service = SecurityService();
 
   bool _isLoading = true;
-  bool _isLockEnabled = false;
-  bool _isLocked = false;
+  bool _lockEnabled = false;
+  bool _hasPin = false;
+  bool _isUnlocked = false;
 
   bool get isLoading => _isLoading;
-  bool get isLockEnabled => _isLockEnabled;
-  bool get isLocked => _isLocked;
+  bool get lockEnabled => _lockEnabled;
+  bool get hasPin => _hasPin;
+  bool get isUnlocked => _isUnlocked;
 
   Future<void> initialize() async {
     _isLoading = true;
     notifyListeners();
 
-    _isLockEnabled = await _service.isLockEnabled();
+    try {
+      _lockEnabled = await _service.isLockEnabled();
+      _hasPin = await _service.hasPin();
 
-    _isLocked = _isLockEnabled;
+      if (_lockEnabled && _hasPin) {
+        _isUnlocked = false;
+      } else {
+        _isUnlocked = true;
+      }
+    } catch (e) {
+      debugPrint('Security initialization failed: $e');
 
-    _isLoading = false;
-    notifyListeners();
+      _lockEnabled = false;
+      _hasPin = false;
+      _isUnlocked = true;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
-  Future<bool> enableLock(String pin) async {
-    if (!_validPin(pin)) {
+  Future<bool> setPin(String pin) async {
+    if (!_isValidPin(pin)) {
       return false;
     }
 
-    await _service.enableLock(pin);
+    await _service.setPin(pin);
+    await _service.setLockEnabled(true);
 
-    _isLockEnabled = true;
-
-    // Do not immediately lock the application here.
-    // The user remains on the Security page after enabling it.
-    _isLocked = false;
+    _hasPin = true;
+    _lockEnabled = true;
+    _isUnlocked = true;
 
     notifyListeners();
 
     return true;
   }
 
-  Future<void> disableLock() async {
-    await _service.disableLock();
+  Future<bool> changePin(
+    String oldPin,
+    String newPin,
+  ) async {
+    if (!_isValidPin(newPin)) {
+      return false;
+    }
 
-    _isLockEnabled = false;
-    _isLocked = false;
+    final oldPinCorrect = await _service.verifyPin(oldPin);
+
+    if (!oldPinCorrect) {
+      return false;
+    }
+
+    await _service.setPin(newPin);
+
+    _hasPin = true;
 
     notifyListeners();
+
+    return true;
   }
 
   Future<bool> verifyPin(String pin) async {
-    if (!_validPin(pin)) {
+    if (!_isValidPin(pin)) {
       return false;
     }
 
     final valid = await _service.verifyPin(pin);
 
     if (valid) {
-      _isLocked = false;
+      _isUnlocked = true;
       notifyListeners();
     }
 
     return valid;
   }
 
-  Future<bool> changePin(String newPin) async {
-    if (!_validPin(newPin)) {
-      return false;
-    }
-
-    await _service.changePin(newPin);
-
-    notifyListeners();
-
-    return true;
-  }
-
-  void lockApp() {
-    if (!_isLockEnabled) {
+  Future<void> enableLock() async {
+    if (!_hasPin) {
       return;
     }
 
-    _isLocked = true;
+    await _service.setLockEnabled(true);
+
+    _lockEnabled = true;
+    _isUnlocked = false;
+
     notifyListeners();
   }
 
-  bool _validPin(String pin) {
+  Future<void> disableLock() async {
+    await _service.setLockEnabled(false);
+
+    _lockEnabled = false;
+    _isUnlocked = true;
+
+    notifyListeners();
+  }
+
+  Future<void> removePin() async {
+    await _service.removePin();
+
+    _hasPin = false;
+    _lockEnabled = false;
+    _isUnlocked = true;
+
+    notifyListeners();
+  }
+
+  void lockVault() {
+    if (_lockEnabled && _hasPin) {
+      _isUnlocked = false;
+      notifyListeners();
+    }
+  }
+
+  void unlockVault() {
+    if (_lockEnabled && _hasPin) {
+      _isUnlocked = true;
+      notifyListeners();
+    }
+  }
+
+  bool _isValidPin(String pin) {
     return RegExp(r'^\d{4}$').hasMatch(pin);
   }
 }

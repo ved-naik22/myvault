@@ -1,53 +1,62 @@
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter/material.dart';
 
 class SettingsService {
-  static const String boxName = 'settingsBox';
-
-  static const String themeModeKey = 'themeMode';
-  static const String notificationsKey = 'notifications';
+  static const String _boxName = 'settings';
+  static const String _themeModeKey = 'themeMode';
 
   Future<Box<dynamic>> _openBox() async {
-    if (Hive.isBoxOpen(boxName)) {
-      return Hive.box<dynamic>(boxName);
+    if (Hive.isBoxOpen(_boxName)) {
+      return Hive.box<dynamic>(_boxName);
     }
 
-    return Hive.openBox<dynamic>(boxName);
+    return Hive.openBox<dynamic>(_boxName);
   }
 
-  Future<String> getThemeMode() async {
+  Future<ThemeMode> getThemeMode() async {
     final box = await _openBox();
 
-    return box.get(
-      themeModeKey,
+    final value = box.get(
+      _themeModeKey,
       defaultValue: 'system',
-    ) as String;
+    );
+
+    switch (value) {
+      case 'light':
+        return ThemeMode.light;
+
+      case 'dark':
+        return ThemeMode.dark;
+
+      default:
+        return ThemeMode.system;
+    }
   }
 
-  Future<void> saveThemeMode(String mode) async {
+  Future<void> saveThemeMode(
+    ThemeMode mode,
+  ) async {
     final box = await _openBox();
 
-    await box.put(themeModeKey, mode);
-  }
+    String value;
 
-  Future<bool> getNotifications() async {
-    final box = await _openBox();
+    switch (mode) {
+      case ThemeMode.light:
+        value = 'light';
+        break;
 
-    return box.get(
-      notificationsKey,
-      defaultValue: true,
-    ) as bool;
-  }
+      case ThemeMode.dark:
+        value = 'dark';
+        break;
 
-  Future<void> saveNotifications(bool enabled) async {
-    final box = await _openBox();
+      case ThemeMode.system:
+        value = 'system';
+        break;
+    }
 
-    await box.put(notificationsKey, enabled);
-  }
-
-  Future<void> resetSettings() async {
-    final box = await _openBox();
-
-    await box.put(themeModeKey, 'system');
-    await box.put(notificationsKey, true);
+    await box.put(
+      _themeModeKey,
+      value,
+    );
   }
 }

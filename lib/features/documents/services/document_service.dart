@@ -3,10 +3,14 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/document_model.dart';
 
 class DocumentService {
-  static const String boxName = "documents";
+  static const String boxName = 'documents';
 
   Future<Box<DocumentModel>> openBox() async {
-    return Hive.openBox<DocumentModel>(boxName);
+    if (Hive.isBoxOpen(boxName)) {
+      return Hive.box<DocumentModel>(boxName);
+    }
+
+    return await Hive.openBox<DocumentModel>(boxName);
   }
 
   Future<void> addDocument(DocumentModel document) async {
