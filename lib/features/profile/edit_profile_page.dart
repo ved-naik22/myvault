@@ -1,17 +1,28 @@
 import 'package:flutter/material.dart';
+
+import 'models/profile_model.dart';
 import 'widgets/profile_form.dart';
 
 class EditProfilePage extends StatelessWidget {
-  const EditProfilePage({super.key});
+  final ProfileModel? profile;
+
+  const EditProfilePage({
+    super.key,
+    this.profile,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Edit Profile"),
+        title: Text(
+          profile == null ? 'Create Profile' : 'Edit Profile',
+        ),
       ),
-      body: const SafeArea(
-        child: ProfileForm(),
+      body: SafeArea(
+        child: ProfileForm(
+          profile: profile,
+        ),
       ),
     );
   }

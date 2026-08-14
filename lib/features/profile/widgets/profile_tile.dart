@@ -15,10 +15,23 @@ class ProfileTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
-        leading: Icon(icon),
-        title: Text(title),
-        subtitle: Text(value),
+        leading: CircleAvatar(
+          child: Icon(icon),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            value.isEmpty ? 'Not provided' : value,
+          ),
+        ),
       ),
     );
   }

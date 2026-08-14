@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../documents/add_document_page.dart';
 import '../documents/documents_page.dart';
 import '../documents/providers/document_provider.dart';
+import '../profile/profile_page.dart';
+import '../profile/providers/profile_provider.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -14,20 +16,12 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   @override
-  void initState() {
-    super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<DocumentProvider>().loadDocuments();
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final provider = context.watch<DocumentProvider>();
-    final documents = provider.documents;
+    final documentProvider = context.watch<DocumentProvider>();
+    final profileProvider = context.watch<ProfileProvider>();
+
+    final documents = documentProvider.documents;
+    final profile = profileProvider.profile;
 
     final Map<String, int> categoryCounts = {};
 
@@ -43,7 +37,10 @@ class _DashboardPageState extends State<DashboardPage> {
     );
 
     if (recentDocuments.length > 5) {
-      recentDocuments.removeRange(5, recentDocuments.length);
+      recentDocuments.removeRange(
+        5,
+        recentDocuments.length,
+      );
     }
 
     return Scaffold(
@@ -51,26 +48,116 @@ class _DashboardPageState extends State<DashboardPage> {
         title: const Text("MyVault"),
         actions: [
           IconButton(
+            tooltip: "Profile",
+            icon: const Icon(Icons.person),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ProfilePage(),
+                ),
+              );
+
+              if (context.mounted) {
+                await profileProvider.loadProfile();
+              }
+            },
+          ),
+
+          IconButton(
             tooltip: "Documents",
             icon: const Icon(Icons.folder),
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => const DocumentsPage(),
                 ),
               );
+
+              if (context.mounted) {
+                await documentProvider.loadDocuments();
+              }
             },
           ),
         ],
       ),
+
       body: RefreshIndicator(
-        onRefresh: provider.loadDocuments,
+        onRefresh: () async {
+          await documentProvider.loadDocuments();
+          await profileProvider.loadProfile();
+        },
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // Profile header
+            Card(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ProfilePage(),
+                    ),
+                  );
+
+                  if (context.mounted) {
+                    await profileProvider.loadProfile();
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                        radius: 30,
+                        child: Icon(
+                          Icons.person,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              profile?.fullName.isNotEmpty == true
+                                  ? "Hello, ${profile!.fullName}"
+                                  : "Welcome to MyVault",
+                              style: const TextStyle(
+                                fontSize: 19,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              profile != null
+                                  ? "View your profile"
+                                  : "Create your profile",
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
             const Text(
-              "Welcome to MyVault",
+              "Your Vault",
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
@@ -89,6 +176,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
             const SizedBox(height: 24),
 
+            // Statistics
             Row(
               children: [
                 Expanded(
@@ -109,8 +197,9 @@ class _DashboardPageState extends State<DashboardPage> {
               ],
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
 
+            // Quick Actions
             const Text(
               "Quick Actions",
               style: TextStyle(
@@ -136,8 +225,9 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                       );
 
-                      if (mounted) {
-                        await provider.loadDocuments();
+                      if (context.mounted) {
+                        await documentProvider
+                            .loadDocuments();
                       }
                     },
                   ),
@@ -145,16 +235,41 @@ class _DashboardPageState extends State<DashboardPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _ActionCard(
-                    title: "View Documents",
+                    title: "Documents",
                     icon: Icons.folder_open,
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
                               const DocumentsPage(),
                         ),
                       );
+
+                      if (context.mounted) {
+                        await documentProvider
+                            .loadDocuments();
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ActionCard(
+                    title: "Profile",
+                    icon: Icons.person,
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ProfilePage(),
+                        ),
+                      );
+
+                      if (context.mounted) {
+                        await profileProvider
+                            .loadProfile();
+                      }
                     },
                   ),
                 ),
@@ -163,6 +278,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
             const SizedBox(height: 28),
 
+            // Categories
             if (categoryCounts.isNotEmpty) ...[
               const Text(
                 "Categories",
@@ -197,6 +313,7 @@ class _DashboardPageState extends State<DashboardPage> {
               const SizedBox(height: 20),
             ],
 
+            // Recent Documents
             const Text(
               "Recently Added",
               style: TextStyle(
@@ -256,14 +373,19 @@ class _DashboardPageState extends State<DashboardPage> {
                       trailing: const Icon(
                         Icons.chevron_right,
                       ),
-                      onTap: () {
-                        Navigator.push(
+                      onTap: () async {
+                        await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) =>
                                 const DocumentsPage(),
                           ),
                         );
+
+                        if (context.mounted) {
+                          await documentProvider
+                              .loadDocuments();
+                        }
                       },
                     ),
                   );
@@ -273,6 +395,24 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(height: 30),
           ],
         ),
+      ),
+
+      // Bottom-right quick add button
+      floatingActionButton: FloatingActionButton(
+        tooltip: "Add Document",
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AddDocumentPage(),
+            ),
+          );
+
+          if (context.mounted) {
+            await documentProvider.loadDocuments();
+          }
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -295,7 +435,8 @@ class _StatCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
           children: [
             Icon(
               icon,
@@ -342,16 +483,16 @@ class _ActionCard extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            vertical: 20,
-            horizontal: 12,
+            vertical: 18,
+            horizontal: 8,
           ),
           child: Column(
             children: [
               Icon(
                 icon,
-                size: 35,
+                size: 32,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Text(
                 title,
                 textAlign: TextAlign.center,
